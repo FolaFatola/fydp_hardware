@@ -10,7 +10,7 @@
 #define UART_CHAR_TX_UUID "6e400002-b5a3-f393-e0a9-e50e24dcca9e" // Write
 #define UART_CHAR_RX_UUID "6e400003-b5a3-f393-e0a9-e50e24dcca9e" // Notify
 
-String veepeak_obd_address = "8C:DE:52:DE:A2:6F"; // Insert your BLE address here
+String veepeak_obd_address = "8C:DE:52:DE:A2:6F";
 BLEAddress *pServerAddress = nullptr;
 BLEClient *pClient = nullptr;
 BLERemoteCharacteristic *pTxCharacteristic = nullptr;
