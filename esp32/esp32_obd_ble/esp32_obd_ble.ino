@@ -1,7 +1,5 @@
 #include "ELMduino.h"
-#include <BLEClientSerial.h>
-
-BLEClientSerial BLESerial;
+#include <BluetoothSerial.h>
 
 
 #define DEBUG_PORT Serial
@@ -9,30 +7,19 @@ BLEClientSerial BLESerial;
 
 ELM327 myELM327;
 
-
 uint32_t rpm = 0;
 
 
 void setup()
 {
-
   DEBUG_PORT.begin(115200);
   // Change name based on your OBD scanner
   ELM_PORT.begin("VEEPEAK");
-  
-  if (!ELM_PORT.connect())
-  {
-    DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 1");
-    while(1);
-  }
-
-  if (!myELM327.begin(ELM_PORT, true, 2000))
-  {
-    Serial.println("Couldn't connect to OBD scanner - Phase 2");
+  if (!myELM.begin(SerialBT, true, 2000)) {
+    Serial.println("Failed to connect");
     while (1);
   }
-
-  Serial.println("Connected to ELM327");
+  Serial.println("Connected");
 }
 
 void loop()
