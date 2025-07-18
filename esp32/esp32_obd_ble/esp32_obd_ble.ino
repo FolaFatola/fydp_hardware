@@ -17,7 +17,8 @@ void setup()
 {
 
   DEBUG_PORT.begin(115200);
-  ELM_PORT.begin("OBDLink CX");
+  // Change name based on your OBD scanner
+  ELM_PORT.begin("VEEPEAK");
   
   if (!ELM_PORT.connect())
   {
