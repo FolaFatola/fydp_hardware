@@ -46,7 +46,7 @@ void loop() {
   getResponse();
 
   vehicleSpeed = strtol(&rxData[6],0,16);
-  Serial.println("Vehicle speed: " + vehicleSpeed + " km/h");
+  Serial.println("Vehicle speed: " + vehicleSpeed);
   rxIndex = 0;
   delay(100);
 
