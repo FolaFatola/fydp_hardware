@@ -42,14 +42,16 @@ void loop() {
 
   vehicleSpeed = strtol(&rxData[6],0,16);
   Serial.println("Vehicle speed: " + vehicleSpeed);
+  delay(100);
 
   // Get RPM
-  Serial.println("010C");
+  OBDSerial.println("010C");
   getResponse();
   getResponse();
   //Convert the string data to an integer
   //NOTE: RPM data is two bytes long, and delivered in 1/4 RPM from the OBD-II-UART
   vehicleRPM = ((strtol(&rxData[6],0,16)*256)+strtol(&rxData[9],0,16))/4;
+  Serial.println("Vehicle RPM: " + vehicleRPM);
 
   delay(100);
 }
