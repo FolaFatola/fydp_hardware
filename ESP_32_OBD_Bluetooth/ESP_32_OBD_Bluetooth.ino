@@ -58,6 +58,49 @@ constexpr int success_status_LED = 13;
 constexpr int lane_deviation_BLE_LED = 26;
 constexpr int send_to_data_base_LED = 32;
 
+float GYRO_X_CALIBRATION = -0.03;
+float GYRO_Y_CALIBRATION = 0.02;
+float GYRO_Z_CALIBRATION = 0.02;
+float Q = 0.01; // process noise - small value that needs to be tuned
+
+
+class KalmanFilter {
+  public:
+  KalmanFilter(float errorMeasure, float errorEstimate, float q);
+  float updateEstimate(float measurement);
+
+private:
+  float _errorMeasure;
+  float _errorEstimate;
+  float _q;
+  float currentEstimate = 0;
+  float lastEstimate = 0;
+  float kalmanGain = 0;
+};
+
+
+KalmanFilter::KalmanFilter(float errorMeasure, float errorEstimate, float q) {
+  _errorMeasure = errorMeasure;
+  _errorEstimate = errorEstimate;
+  _q = q;
+}
+
+float KalmanFilter::updateEstimate(float measurement)
+{
+  kalmanGain = _errorEstimate / (_errorEstimate + _errorMeasure);
+  currentEstimate = lastEstimate + kalmanGain * (measurement - lastEstimate);
+  _errorEstimate = (1.0f - kalmanGain) * _errorEstimate + fabsf(lastEstimate - currentEstimate) * _q;
+  lastEstimate = currentEstimate;
+  return currentEstimate;
+}
+
+KalmanFilter KalmanFilterAX(1,1,0.1);
+KalmanFilter KalmanFilterAY(1,1,0.1);
+KalmanFilter KalmanFilterAZ(1,1,0.1);
+
+KalmanFilter KalmanFilterGX(2,2,0.01);
+KalmanFilter KalmanFilterGY(2,2,0.01);
+KalmanFilter KalmanFilterGZ(2,2,0.01);
 
 SemaphoreHandle_t xDataMutex;
 
@@ -394,9 +437,9 @@ void Task1Code(void * pvParameters) {
         
       // Sync current state to our local snapshot
       // memcpy(&web_packet_local, &web_packet, sizeof(WebPacket));`
-      Serial.println("The message is");
+      // Serial.println("The message is");
       construct_message(web_packet, &message);
-      Serial.println(message);
+      // Serial.println(message);
       xSemaphoreGive(xDataMutex); 
     }
 
@@ -422,7 +465,7 @@ void Task1Code(void * pvParameters) {
 void Task2Code(void* pvParameters) {
   for(;;) {
     vTaskDelay(pdMS_TO_TICKS(10));
-    Serial.println("Task 2 is running on Core 2");
+    // Serial.println("Task 2 is running on Core 2");
     sensors_event_t a;
     sensors_event_t g;
     sensors_event_t temp;
@@ -436,13 +479,27 @@ void Task2Code(void* pvParameters) {
     // Serial.println(latitude);
     // Serial.print(F("The longitude is: "));
     // Serial.println(longitude);
+
+    Serial.print(KalmanFilterAX.updateEstimate(a.acceleration.x));
+    Serial.print(",");
+    Serial.print(KalmanFilterAY.updateEstimate(a.acceleration.y));
+    Serial.print(",");
+    Serial.print(KalmanFilterAZ.updateEstimate(a.acceleration.z));
+    Serial.print(", ");
+    Serial.print(KalmanFilterGX.updateEstimate(g.gyro.x - GYRO_X_CALIBRATION));
+    Serial.print(",");
+    Serial.print(KalmanFilterGY.updateEstimate(g.gyro.y - GYRO_Y_CALIBRATION));
+    Serial.print(",");
+    Serial.print(KalmanFilterGZ.updateEstimate(g.gyro.z - GYRO_Z_CALIBRATION));
+    Serial.println("");
+
     if (xSemaphoreTake(xDataMutex, 0) == pdTRUE) {
         web_packet.gps_longitude = longitude;
         web_packet.gps_latitude = latitude;
-        web_packet.yaw = g.gyro.heading;
-        web_packet.acceleration_x = a.acceleration.x;
-        web_packet.acceleration_y = a.acceleration.y;
-        web_packet.acceleration_z = a.acceleration.z;
+        web_packet.yaw = KalmanFilterGZ.updateEstimate(g.gyro.z - GYRO_Z_CALIBRATION);
+        web_packet.acceleration_x = KalmanFilterAX.updateEstimate(a.acceleration.x);
+        web_packet.acceleration_y = KalmanFilterAY.updateEstimate(a.acceleration.y);
+        web_packet.acceleration_z = KalmanFilterAZ.updateEstimate(a.acceleration.z);
 
         // web_packet.yaw = 0.0;
         // web_packet.acceleration_x = 0.1;
@@ -566,10 +623,17 @@ void setup() {
     }
 
 
+
+    delay(100);
+
+
     Serial.println("MPU6050 Found!");
+      // set accelerometer range to +-8G
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  // set gyro range to +- 500 deg/s
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-    mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
+  // set filter bandwidth to 21 Hz
+    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
     Serial.println("");
     delay(100);
