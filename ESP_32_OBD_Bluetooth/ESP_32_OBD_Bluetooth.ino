@@ -480,26 +480,21 @@ void Task2Code(void* pvParameters) {
     // Serial.print(F("The longitude is: "));
     // Serial.println(longitude);
 
-    Serial.print(KalmanFilterAX.updateEstimate(a.acceleration.x));
-    Serial.print(",");
-    Serial.print(KalmanFilterAY.updateEstimate(a.acceleration.y));
-    Serial.print(",");
-    Serial.print(KalmanFilterAZ.updateEstimate(a.acceleration.z));
-    Serial.print(", ");
-    Serial.print(KalmanFilterGX.updateEstimate(g.gyro.x - GYRO_X_CALIBRATION));
-    Serial.print(",");
-    Serial.print(KalmanFilterGY.updateEstimate(g.gyro.y - GYRO_Y_CALIBRATION));
-    Serial.print(",");
-    Serial.print(KalmanFilterGZ.updateEstimate(g.gyro.z - GYRO_Z_CALIBRATION));
-    Serial.println("");
+    float acceleration_x = KalmanFilterAX.updateEstimate(a.acceleration.x);
+    float acceleration_y = KalmanFilterAX.updateEstimate(a.acceleration.y);
+    float acceleration_z = KalmanFilterAX.updateEstimate(a.acceleration.z);
+
+    float gyro_x = KalmanFilterGX.updateEstimate(g.gyro.x - GYRO_X_CALIBRATION);
+    float gyro_y = KalmanFilterGY.updateEstimate(g.gyro.y - GYRO_Y_CALIBRATION);
+    float gyro_z = KalmanFilterGZ.updateEstimate(g.gyro.z - GYRO_Z_CALIBRATION);
 
     if (xSemaphoreTake(xDataMutex, 0) == pdTRUE) {
         web_packet.gps_longitude = longitude;
         web_packet.gps_latitude = latitude;
-        web_packet.yaw = KalmanFilterGZ.updateEstimate(g.gyro.z - GYRO_Z_CALIBRATION);
-        web_packet.acceleration_x = KalmanFilterAX.updateEstimate(a.acceleration.x);
-        web_packet.acceleration_y = KalmanFilterAY.updateEstimate(a.acceleration.y);
-        web_packet.acceleration_z = KalmanFilterAZ.updateEstimate(a.acceleration.z);
+        web_packet.yaw = gyro_z;
+        web_packet.acceleration_x = acceleration_x;
+        web_packet.acceleration_y = acceleration_y;
+        web_packet.acceleration_z = acceleration_z;
 
         // web_packet.yaw = 0.0;
         // web_packet.acceleration_x = 0.1;
